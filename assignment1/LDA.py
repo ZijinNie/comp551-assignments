@@ -42,13 +42,7 @@ class LDA:
                 covariance = np.add(covariance, np.dot(delta,delta.T))
         
         covariance = np.divide(covariance,n0+n1-2)
-        '''
-        print(u0)
-        print(u1)
-        print(p0)
-        print(p1)
-        print(covariance)
-        '''
+
         return p0, p1, u0, u1, covariance
     
     def predict (self, x, u0, u1, p0, p1,covariance):
