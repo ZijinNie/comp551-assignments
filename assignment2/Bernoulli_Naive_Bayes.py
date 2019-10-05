@@ -163,6 +163,75 @@ class Feature_Processer:
         return bigramFeatureVector
     """
 
+
+class classifier:
+    def __init__(self, x_train, x_test, y_train,y_test):
+        self.x_train = x_train
+        self.y_train = y_train
+        self.x_test = x_test
+        self.y_test = y_test
+
+    def logistic(self, c):
+        model = LogisticRegression(C=c, dual=False, solver='lbfgs',multi_class= 'multinomial')
+        model.fit(self.x_train, self.y_train)
+        preds = model.predict(self.x_test)
+        scores1 = cross_val_score(model, self.x_train, self.y_train, cv=5, scoring='accuracy')
+        print("Score of Logistic in Cross Validation", scores1.mean() * 100)
+        print("Losistic Regression : accurancy_matrix is", metrics.accuracy_score(self.y_test, preds))
+        cm = confusion_matrix(self.y_test, preds)
+        print("Confusion Matrix\n", cm)
+        print("Report", classification_report(self.y_test, preds))
+
+    def Ber_NaiveBayes(self, alpha):
+        model = BernoulliNB(alpha=alpha).fit(self.x_train, self.y_train)
+        preds = model.predict(self.x_test)
+        scores2 = cross_val_score(model, self.x_train, self.y_train, cv=5, scoring='accuracy')
+        print("Score of Naive Bayes", scores2.mean() * 100)
+        print("Bernoulli Naive Bayes : accurancy_matrix is", metrics.accuracy_score(self.y_test, preds))
+        cm = confusion_matrix(self.y_test, preds)
+        print("Confusion Matrix\n", cm)
+        print("Report", classification_report(self.y_test, preds))
+
+    def svm(self, c):
+        model = LinearSVC(C=c)
+        model.fit(self.x_train, self.y_train)
+        preds = model.predict(self.x_test)
+
+        scores3 = cross_val_score(model, self.x_train, self.y_train, cv=5, scoring='accuracy')
+        print("Score of SVM in Cross Validation", scores3.mean() * 100)
+        print("SVM Regression : accurancy_is", metrics.accuracy_score(self.y_test, preds))
+        cm = confusion_matrix(self.y_test, preds)
+        print("Confusion Matrix\n", cm)
+        print("Report", classification_report(self.y_test, preds))
+
+    def decision_tree(self):
+        #criterion=’gini’, splitter=’best’, max_depth=None, min_samples_split=2, min_samples_leaf=1, min_weight_fraction_leaf=0.0, max_features=None, random_state=None, max_leaf_nodes=None, min_impurity_decrease=0.0, min_impurity_split=None, class_weight=None, presort=False
+        model = DecisionTreeClassifier(criterion='gini', splitter='best', max_depth=None)
+        model.fit(self.x_train, self.y_train)
+        scores3 = cross_val_score(model, self.x_train, self.y_train, cv=5, scoring='accuracy')
+        print("Score of decision tree in Cross Validation", scores3.mean() * 100)
+        print("decision tree  : accurancy_is", metrics.accuracy_score(self.y_test, model.predict(self.x_test)))
+
+    def QDA(self):
+        model = QuadraticDiscriminantAnalysis()
+        model.fit(self.x_train.toarray(), self.y_train)
+        scores3 = cross_val_score(model, self.x_train.toarray(), self.y_train, cv=5, scoring='accuracy')
+        print("Score of QDA in Cross Validation", scores3.mean() * 100)
+        print("QDA Regression : accurancy_is", metrics.accuracy_score(self.y_test, model.predict(self.x_test.toarray())))
+
+    def dummy(self):
+        clf = DummyClassifier(strategy='stratified', random_state=0)
+        clf.fit(self.x_train, self.y_train)
+        score = clf.score(self.x_test, self.y_test)
+        print("Random Baseline's accurancy", score)
+
+    def  multNB(self):
+        model = MultinomialNB()
+        model.fit(self.x_train, self.y_train)
+        scores3 = cross_val_score(model, self.x_train, self.y_train, cv=5, scoring='accuracy')
+        print("Score of MultinomialNB in Cross Validation", scores3.mean() * 100)
+        print(" MultinomialNB Regression : accurancy_is", metrics.accuracy_score(self.y_test, model.predict(self.x_test)))
+
 def main():
     data_raw = Reader().read("reddit_train.csv")
     data_train = data_raw['comments']
