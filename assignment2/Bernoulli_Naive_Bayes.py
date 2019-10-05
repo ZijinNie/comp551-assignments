@@ -132,6 +132,36 @@ class Cleaner:
         for s in self.words_list:
             sents.append(' '.join(s))
         return sents
+# 3 feature processing
+
+class Feature_Processer:
+    def split(self,features_set,target_set, ratio):
+        X_train, X_test, y_train, y_test = train_test_split(features_set, target_set, train_size=ratio,
+                                                            test_size=1-ratio)
+        return X_train, X_test, y_train, y_test
+    #n_grams, min_df
+    #adjustable (1,2) is not good as (1,1)
+    def count_vector_features_produce(self, X_train, X_test, thresold):
+        cv = CountVectorizer(binary=True,min_df=thresold)
+        cv.fit(X_train)
+        X = cv.transform(X_train)
+        X_test = cv.transform(X_test)
+        return X, X_test
+
+    def tf_idf(self,X_train,X_test,n_grams,thresold):
+        tf_idf_vectorizer = TfidfVectorizer(ngram_range=n_grams,min_df =thresold)
+        vectors_train_idf = tf_idf_vectorizer.fit_transform(X_train)
+        vectors_test_idf = tf_idf_vectorizer.transform(X_test)
+        return vectors_train_idf,vectors_test_idf
+    #not finished yet
+    #check later
+    """
+    def bigram_extractor(self):
+        bigramFeatureVector = []
+        for item in bigrams(tweetString.split()):
+            bigramFeatureVector.append(' '.join(item))
+        return bigramFeatureVector
+    """
 
 def main():
     data_raw = Reader().read("reddit_train.csv")
