@@ -7,32 +7,34 @@ Created on Sat Sep 21 17:35:50 2019
 import numpy as np
 class LDA:
     
+    # given the train set, output the parameters in the 
+    # gaussian distribution propability equations
     def fit(self, X, Y):
+        #initalize variables
         n0=0
         n1=0
         X0sum= np.zeros((X.shape[1],1))
         X1sum= np.zeros((X.shape[1],1))
         covariance = np.zeros((X.shape[1],X.shape[1]))
         
+        #count the number of class1 and class0
         for i in range(X.shape[0]):
             if (Y[i] == 1):
-               # print("111")
                 n1+=1
                 X1sum=np.add(X1sum, np.array([X[i, :]]).T) 
             else:
-                #print("000")
                 n0+=1
                 X0sum=np.add(X0sum, np.array([X[i, :]]).T)
         
-        
+        #compute probabality of Y
         p0= n0/(n0+n1)
         p1= n1/(n0+n1)
         
-
-
+        #computer mean
         u0= np.divide(X0sum,n0)
         u1= np.divide(X1sum,n1)
         
+        #compute covariance matrix
         for j in range(X.shape[0]):
             if Y[j] == 0:
                 delta = np.subtract(np.array([X[j, :]]).T, u0)
@@ -44,6 +46,9 @@ class LDA:
         covariance = np.divide(covariance,n0+n1-2)
 
         return p0, p1, u0, u1, covariance
+    
+    #input: the parameters of the gaussian distribution equation, and data points
+    #output: the vector of preficted class of data
     
     def predict (self, x, u0, u1, p0, p1,covariance):
         y = np.zeros(x.shape[0])
