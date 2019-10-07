@@ -237,11 +237,11 @@ def main():
     data_train = data_raw['comments']
     data_test = data_raw['subreddits']
     #use_lemmer,use_stemmer, use_stopwords
-    cleaner_train = Cleaner(data_train,True,False,True)
+    cleaner_train = Cleaner(data_train,True,False,False)
     cleaner_train.cleaned()
 
     X_train, X_test, y_train, y_test = Feature_Processer().split(data_train,data_test,0.8)
-    X_train, X_test = Feature_Processer().tf_idf(X_train, X_test,(1,2),1)
+    X_train, X_test = Feature_Processer().tf_idf(X_train, X_test,(1,1),2)
 
     clf = classifier(X_train, X_test, y_train, y_test)
     #logistic converges deadly
@@ -251,9 +251,9 @@ def main():
     #clf.decision_tree()
     #clf.QDA()
     clf.multNB()
-    #svm approximately 56%
-    #multinomial Nb with 54%
-
+    #svm approximately 56-57%
+    #multinomial Nb with 55-56% for removing the frequency less than 2
+    #bigram with unigram 50%
 
 if __name__ == "__main__":
     main()
