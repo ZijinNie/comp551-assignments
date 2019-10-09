@@ -5,9 +5,9 @@ import numpy as np
 
 class Berboulli_Naive_Bayes:
     
-    def train (self,trainmatrix):
-        X = trainmatrix[ :, :-1]
-        y = trainmatrix[ :, -1]
+    def train (self,x_train,y_train):
+        X = x_train
+        y = y_train
         
         #get the number of classes
         classNum = np.amax(y)
@@ -85,12 +85,19 @@ class Berboulli_Naive_Bayes:
         bestProb = 0
         
         #Choose the class with highest prob
-        for i in range(function.shape[0]):
-            prob = function[x, 0] 
-            w = function [ 1 : ]
-            prob +=np.dot( np.array([x].T) , w)
-            if prob > bestProb:
-                bestClass = i+1
-                bestProb = prob
-        return bestClass
+        result = np.zeros((x.shape[0],1))
+        index  = 0
+        for x_i in x:
+            for i in range(function.shape[0]):
+                prob = function[x_i, 0]
+                w = function [ 1 : ]
+                prob +=np.dot( np.array(x_i.T) , w)
+                if prob > bestProb:
+                    bestClass = i+1
+                    bestProb = prob
+                    result[index] = bestClass
+            index +=1
+        return result
+
+#TODO: Accurancy function needed. 
             

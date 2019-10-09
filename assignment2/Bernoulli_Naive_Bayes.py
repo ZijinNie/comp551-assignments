@@ -11,6 +11,7 @@ from sklearn.dummy import DummyClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.naive_bayes import MultinomialNB
+from naiveBayes import Berboulli_Naive_Bayes
 #help_clean
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
@@ -206,18 +207,11 @@ class classifier:
 
     def decision_tree(self):
         #criterion=’gini’, splitter=’best’, max_depth=None, min_samples_split=2, min_samples_leaf=1, min_weight_fraction_leaf=0.0, max_features=None, random_state=None, max_leaf_nodes=None, min_impurity_decrease=0.0, min_impurity_split=None, class_weight=None, presort=False
-        model = DecisionTreeClassifier(criterion='gini', splitter='best', max_depth=None)
+        model = DecisionTreeClassifier(criterion='gini', splitter='best', max_depth=None,min_samples_split=0.1)
         model.fit(self.x_train, self.y_train)
         scores3 = cross_val_score(model, self.x_train, self.y_train, cv=5, scoring='accuracy')
         print("Score of decision tree in Cross Validation", scores3.mean() * 100)
         print("decision tree  : accurancy_is", metrics.accuracy_score(self.y_test, model.predict(self.x_test)))
-
-    def QDA(self):
-        model = QuadraticDiscriminantAnalysis()
-        model.fit(self.x_train.toarray(), self.y_train)
-        scores3 = cross_val_score(model, self.x_train.toarray(), self.y_train, cv=5, scoring='accuracy')
-        print("Score of QDA in Cross Validation", scores3.mean() * 100)
-        print("QDA Regression : accurancy_is", metrics.accuracy_score(self.y_test, model.predict(self.x_test.toarray())))
 
     def dummy(self):
         clf = DummyClassifier(strategy='stratified', random_state=0)
@@ -232,6 +226,12 @@ class classifier:
         print("Score of MultinomialNB in Cross Validation", scores3.mean() * 100)
         print(" MultinomialNB Regression : accurancy_is", metrics.accuracy_score(self.y_test, model.predict(self.x_test)))
 
+    def NB(self):
+        model =Berboulli_Naive_Bayes()
+        model.train(self.x_train,self.y_train)
+        model.fit(self.x_train)
+
+
 def main():
     data_raw = Reader().read("reddit_train.csv")
     data_train = data_raw['comments']
@@ -240,20 +240,23 @@ def main():
     cleaner_train = Cleaner(data_train,True,False,False)
     cleaner_train.cleaned()
 
-    X_train, X_test, y_train, y_test = Feature_Processer().split(data_train,data_test,0.8)
-    X_train, X_test = Feature_Processer().tf_idf(X_train, X_test,(1,1),2)
+    X_train, X_test, y_train, y_test = Feature_Processer().split(data_train,data_test,0.9)
+    X_train, X_test = Feature_Processer().tf_idf(X_train, X_test,(1,1),1)
 
     clf = classifier(X_train, X_test, y_train, y_test)
     #logistic converges deadly
-    #clf.logistic(1.0)
+    #clf.logistic(10)
     clf.svm(0.2)
     #跑不动
     #clf.decision_tree()
-    #clf.QDA()
-    clf.multNB()
+    #Decision tree 23% 0.01 28%
+    #Decision tree     0.001 27%
+    #Decision tree     0.1 26%
+
+    #clf.multNB()
     #svm approximately 56-57%
-    #multinomial Nb with 55-56% for removing the frequency less than 2
-    #bigram with unigram 50%
+    #multinomial Nb with 55-56% for removing the frequency less than 2 20% 0.0001 54%
+    #bigram with unigram 50% distrucbution 2 51%-52%  0.02 20%
 
 if __name__ == "__main__":
     main()
