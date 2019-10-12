@@ -99,5 +99,5 @@ class Berboulli_Naive_Bayes:
             index +=1
         return result
 
-#TODO: Accurancy function needed. 
+#TODO: Accurancy function needed.
             
