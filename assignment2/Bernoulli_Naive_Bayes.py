@@ -3,6 +3,7 @@
 import numpy as np
 import string
 import pandas as pd
+from sklearn.datasets import make_classification as mk
 #model
 from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import BernoulliNB
@@ -12,6 +13,8 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.naive_bayes import MultinomialNB
 from naiveBayes import Berboulli_Naive_Bayes
+from sklearn.ensemble import BaggingClassifier as BC
+
 #help_clean
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
@@ -31,6 +34,7 @@ from sklearn import metrics
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
 from statistics import mean
+
 
 #read from the file, possible write for testing
 class Reader:
@@ -172,8 +176,8 @@ class classifier:
         self.x_test = x_test
         self.y_test = y_test
 
-    def logistic(self, c):
-        model = LogisticRegression(C=c, dual=False, solver='lbfgs',multi_class= 'multinomial')
+    def logistic(self, c,epochs):
+        model = LogisticRegression(C=c, dual=False, solver='lbfgs',multi_class= 'multinomial',max_iter = epochs)
         model.fit(self.x_train, self.y_train)
         preds = model.predict(self.x_test)
         scores1 = cross_val_score(model, self.x_train, self.y_train, cv=5, scoring='accuracy')
@@ -182,7 +186,12 @@ class classifier:
         cm = confusion_matrix(self.y_test, preds)
         print("Confusion Matrix\n", cm)
         print("Report", classification_report(self.y_test, preds))
-
+        
+    def SelfNaiveByes(self):
+        model = Berboulli_Naive_Bayes()
+        model.train(self.x_train,self.y_train)
+        print(model.score(self.x_test,self.y_test))
+        
     def Ber_NaiveBayes(self, alpha):
         model = BernoulliNB(alpha=alpha).fit(self.x_train, self.y_train)
         preds = model.predict(self.x_test)
@@ -219,7 +228,7 @@ class classifier:
         score = clf.score(self.x_test, self.y_test)
         print("Random Baseline's accurancy", score)
 
-    def  multNB(self):
+    def multNB(self):
         model = MultinomialNB()
         model.fit(self.x_train, self.y_train)
         scores3 = cross_val_score(model, self.x_train, self.y_train, cv=5, scoring='accuracy')
@@ -230,6 +239,8 @@ class classifier:
         model =Berboulli_Naive_Bayes()
         model.train(self.x_train,self.y_train)
         model.fit(self.x_train)
+        
+    
 
 
 def main():
@@ -239,14 +250,29 @@ def main():
     #use_lemmer,use_stemmer, use_stopwords
     cleaner_train = Cleaner(data_train,True,False,False)
     cleaner_train.cleaned()
-
+    
+    #data_x , data_y = mk(n_sampls=1000, n_features = 1000, n_informative = 10)
+    
+    
     X_train, X_test, y_train, y_test = Feature_Processer().split(data_train,data_test,0.9)
-    X_train, X_test = Feature_Processer().tf_idf(X_train, X_test,(1,1),1)
+    
+    #X_train, X_test = Feature_Processer().tf_idf(X_train, X_test,(1,1),1)
+    
+    #This is for running Multi Bernoulli NB
+    #categoryDict = dict([(y,x+1) for x,y in enumerate(sorted(set(y_train)))])
+    categoryDict = {'AskReddit': 1, 'GlobalOffensive': 2, 'Music': 3, 'Overwatch': 4, 'anime': 5, 'baseball': 6, 'canada': 7, 'conspiracy': 8, 'europe': 9, 'funny': 10, 'gameofthrones': 11, 'hockey': 12, 'leagueoflegends': 13, 'movies': 14, 'nba': 15, 'nfl': 16, 'soccer': 17, 'trees': 18, 'worldnews': 19, 'wow': 20}
+    y_train = [categoryDict[i] for i in y_train]
+    y_test = [categoryDict[i] for i in y_test]
+    X_train, X_test = Feature_Processer().count_vector_features_produce(X_train,X_test,1)
+    X_train = X_train.toArray()
+    X_test = X_test.toArray()
+    
 
     clf = classifier(X_train, X_test, y_train, y_test)
-    #logistic converges deadly
-    #clf.logistic(10)
-    clf.svm(0.2)
+    clf.SelfNaiveByes()
+    #clf.logistic(10,1000)
+    #logistic regression take so much time
+    #clf.svm(0.2)
     #跑不动
     #clf.decision_tree()
     #Decision tree 23% 0.01 28%
@@ -254,7 +280,7 @@ def main():
     #Decision tree     0.1 26%
 
     #clf.multNB()
-    #svm approximately 56-57%
+    #svm approximately 56-57% using tf_idf, 54-55% using binary_vetorizor
     #multinomial Nb with 55-56% for removing the frequency less than 2 20% 0.0001 54%
     #bigram with unigram 50% distrucbution 2 51%-52%  0.02 20%
 
