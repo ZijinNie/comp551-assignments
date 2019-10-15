@@ -7,6 +7,7 @@ from sklearn.datasets import make_classification as mk
 #model
 from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import BernoulliNB
+from sklearn.svm import SVC
 from sklearn.svm import LinearSVC
 from sklearn.dummy import DummyClassifier
 from sklearn.tree import DecisionTreeClassifier
@@ -14,7 +15,10 @@ from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.naive_bayes import MultinomialNB
 from naiveBayes import Berboulli_Naive_Bayes
 from sklearn.ensemble import BaggingClassifier as BC
-
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
+from sklearn.datasets import make_classification as mc
 #help_clean
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
@@ -34,6 +38,7 @@ from sklearn import metrics
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
 from statistics import mean
+from collections import Counter
 
 
 #read from the file, possible write for testing
@@ -140,9 +145,9 @@ class Cleaner:
 # 3 feature processing
 
 class Feature_Processer:
-    def split(self,features_set,target_set, ratio):
+    def split(self,features_set,target_set, ratio,isShuffle):
         X_train, X_test, y_train, y_test = train_test_split(features_set, target_set, train_size=ratio,
-                                                            test_size=1-ratio)
+                                                            test_size=1-ratio, shuffle = isShuffle)
         return X_train, X_test, y_train, y_test
     #n_grams, min_df
     #adjustable (1,2) is not good as (1,1)
@@ -156,6 +161,7 @@ class Feature_Processer:
     def tf_idf(self,X_train,X_test,n_grams,thresold):
         tf_idf_vectorizer = TfidfVectorizer(ngram_range=n_grams,min_df =thresold)
         vectors_train_idf = tf_idf_vectorizer.fit_transform(X_train)
+        print()
         vectors_test_idf = tf_idf_vectorizer.transform(X_test)
         return vectors_train_idf,vectors_test_idf
     #not finished yet
@@ -177,16 +183,24 @@ class classifier:
         self.y_test = y_test
 
     def logistic(self, c,epochs):
-        model = LogisticRegression(C=c, dual=False, solver='lbfgs',multi_class= 'multinomial',max_iter = epochs)
+        model = LogisticRegression(C=c, dual=False, solver='saga',multi_class= 'multinomial',max_iter = epochs)
         model.fit(self.x_train, self.y_train)
         preds = model.predict(self.x_test)
+        '''
+        with open('logistic_predict.csv', 'w') as f:
+            for item in preds:
+                f.write("%s\n" % item)
+        '''
         scores1 = cross_val_score(model, self.x_train, self.y_train, cv=5, scoring='accuracy')
+        
         print("Score of Logistic in Cross Validation", scores1.mean() * 100)
+        
         print("Losistic Regression : accurancy_matrix is", metrics.accuracy_score(self.y_test, preds))
         cm = confusion_matrix(self.y_test, preds)
         print("Confusion Matrix\n", cm)
         print("Report", classification_report(self.y_test, preds))
         
+        return preds
     def SelfNaiveByes(self):
         model = Berboulli_Naive_Bayes()
         model.train(self.x_train,self.y_train)
@@ -201,19 +215,38 @@ class classifier:
         cm = confusion_matrix(self.y_test, preds)
         print("Confusion Matrix\n", cm)
         print("Report", classification_report(self.y_test, preds))
+    def QDA(self):
+        model = QuadraticDiscriminantAnalysis()
+        model.fit(self.x_train.toarray(), self.y_train)
+        pred=model.predict(self.x_test.toarray())
+        
+        scores3 = cross_val_score(model, self.x_train.toarray(), self.y_train, cv=5, scoring='accuracy')
+        with open('QDA_predict.csv', 'w') as f:
+            for item in pred:
+                f.write("%s\n" % item)
+        print("Score of QDA in Cross Validation", scores3.mean() * 100)
+        print("QDA Regression : accurancy_is", metrics.accuracy_score(self.y_test, pred))
 
-    def svm(self, c):
-        model = LinearSVC(C=c)
+    def svm(self, c, kernel):
+        n_estimators = 10
+        model = BC(LinearSVC(C= 0.2, class_weight='balanced'), max_samples= 1.0, n_estimators=n_estimators, n_jobs = -1)
+        print("start fitting")
         model.fit(self.x_train, self.y_train)
         preds = model.predict(self.x_test)
-
+        '''
+        with open('svm_predict.csv', 'w') as f:
+            for item in preds:
+                f.write("%s\n" % item)
+            '''
         scores3 = cross_val_score(model, self.x_train, self.y_train, cv=5, scoring='accuracy')
         print("Score of SVM in Cross Validation", scores3.mean() * 100)
+        
         print("SVM Regression : accurancy_is", metrics.accuracy_score(self.y_test, preds))
         cm = confusion_matrix(self.y_test, preds)
         print("Confusion Matrix\n", cm)
         print("Report", classification_report(self.y_test, preds))
-
+        
+        return preds
     def decision_tree(self):
         #criterion=’gini’, splitter=’best’, max_depth=None, min_samples_split=2, min_samples_leaf=1, min_weight_fraction_leaf=0.0, max_features=None, random_state=None, max_leaf_nodes=None, min_impurity_decrease=0.0, min_impurity_split=None, class_weight=None, presort=False
         model = DecisionTreeClassifier(criterion='gini', splitter='best', max_depth=None,min_samples_split=0.1)
@@ -229,60 +262,145 @@ class classifier:
         print("Random Baseline's accurancy", score)
 
     def multNB(self):
-        model = MultinomialNB()
+        n_estimators = 10
+        #model = BC( MultinomialNB(alpha = 0.5), max_samples=1.0, max_features=1.0, n_estimators=n_estimators, n_jobs = -1)
+        model = MultinomialNB(alpha = 0.5)
         model.fit(self.x_train, self.y_train)
+        pred = model.predict(self.x_test)
+        '''
+        with open('mulNB_predict.csv', 'w') as f:
+            for item in pred:
+                f.write("%s\n" % item)
+                '''
         scores3 = cross_val_score(model, self.x_train, self.y_train, cv=5, scoring='accuracy')
         print("Score of MultinomialNB in Cross Validation", scores3.mean() * 100)
-        print(" MultinomialNB Regression : accurancy_is", metrics.accuracy_score(self.y_test, model.predict(self.x_test)))
-
+        
+        print(" MultinomialNB Regression : accurancy_is", metrics.accuracy_score(self.y_test, pred))
+        
+        return pred
+    
+    def KNeighbors(self):
+        model = KNeighborsClassifier(n_neighbors =500, weights = 'uniform')
+        model.fit(self.x_train, self.y_train)
+        predict = model.predict(self.x_test)
+        print(" kneighbors Regression : accurancy_is", metrics.accuracy_score(self.y_test, predict))
+        
     def NB(self):
         model =Berboulli_Naive_Bayes()
         model.train(self.x_train,self.y_train)
         model.fit(self.x_train)
         
-    
+    def LDA(self):
+        model  = LDA()
+        model.fit(self.x_train, self.y_train)
+        pred = model.predict(self.x_test)
+        
+        scores3 = cross_val_score(model, self.x_train, self.y_train, cv=5, scoring='accuracy')
+        print("Score of LDA in Cross Validation", scores3.mean() * 100)
+        
+        print(" LDA : accurancy_is", metrics.accuracy_score(self.y_test, pred))
 
 
 def main():
+    
     data_raw = Reader().read("reddit_train.csv")
+    
+    testset_raw =  Reader().read("reddit_test.csv")
+    X_vali = testset_raw['comments']
+    
     data_train = data_raw['comments']
     data_test = data_raw['subreddits']
     #use_lemmer,use_stemmer, use_stopwords
     cleaner_train = Cleaner(data_train,True,False,False)
     cleaner_train.cleaned()
     
+    cleaner_vali = Cleaner(X_vali,True,False,False)
+    cleaner_vali.cleaned()
+    
     #data_x , data_y = mk(n_sampls=1000, n_features = 1000, n_informative = 10)
     
     
-    X_train, X_test, y_train, y_test = Feature_Processer().split(data_train,data_test,0.9)
+    X_train, X_test, y_train, y_test = Feature_Processer().split(data_train,data_test,0.9,True)
     
-    #X_train, X_test = Feature_Processer().tf_idf(X_train, X_test,(1,1),1)
+    X_train, X_test = Feature_Processer().tf_idf(X_train, X_test,(1,1),2)
+    
+    
     
     #This is for running Multi Bernoulli NB
     #categoryDict = dict([(y,x+1) for x,y in enumerate(sorted(set(y_train)))])
-    categoryDict = {'AskReddit': 1, 'GlobalOffensive': 2, 'Music': 3, 'Overwatch': 4, 'anime': 5, 'baseball': 6, 'canada': 7, 'conspiracy': 8, 'europe': 9, 'funny': 10, 'gameofthrones': 11, 'hockey': 12, 'leagueoflegends': 13, 'movies': 14, 'nba': 15, 'nfl': 16, 'soccer': 17, 'trees': 18, 'worldnews': 19, 'wow': 20}
-    y_train = [categoryDict[i] for i in y_train]
-    y_test = [categoryDict[i] for i in y_test]
-    X_train, X_test = Feature_Processer().count_vector_features_produce(X_train,X_test,1)
-    X_train = X_train.toArray()
-    X_test = X_test.toArray()
+    #categoryDict = {'AskReddit': 1, 'GlobalOffensive': 2, 'Music': 3, 'Overwatch': 4, 'anime': 5, 'baseball': 6, 'canada': 7, 'conspiracy': 8, 'europe': 9, 'funny': 10, 'gameofthrones': 11, 'hockey': 12, 'leagueoflegends': 13, 'movies': 14, 'nba': 15, 'nfl': 16, 'soccer': 17, 'trees': 18, 'worldnews': 19, 'wow': 20}
+    #y_train = [categoryDict[i] for i in y_train]
+    #y_test = [categoryDict[i] for i in y_test]
+    
     
 
     clf = classifier(X_train, X_test, y_train, y_test)
-    clf.SelfNaiveByes()
-    #clf.logistic(10,1000)
-    #logistic regression take so much time
-    #clf.svm(0.2)
+    print("start training")
+    #clf.SelfNaiveByes()
+    #clf.logistic(2,1000)
+    #clf.KNeighbors()
+    #logistic regression 50.2%
+    #clf.svm(0.2,'linear')
     #跑不动
     #clf.decision_tree()
     #Decision tree 23% 0.01 28%
     #Decision tree     0.001 27%
     #Decision tree     0.1 26%
-
+    
     #clf.multNB()
     #svm approximately 56-57% using tf_idf, 54-55% using binary_vetorizor
     #multinomial Nb with 55-56% for removing the frequency less than 2 20% 0.0001 54%
     #bigram with unigram 50% distrucbution 2 51%-52%  0.02 20%
+    '''
+-----------    USED FOR TESTING PERFORMANCE OF OUR MODEL --------
+    
+    data, label = mc(n_samples = 1000, n_features = 5, n_classes = 2, n_redundant = 0, n_repeated = 0, shift = 0)
+    data = np.where(data > 0, 1, 0)
+    label = np.where(label == 0, 1,2)
+    X_train, X_test, y_train, y_test = Feature_Processer().split(data,label,0.9,True)
+    print(X_train)
+     
+    clf = classifier(X_train, X_test, y_train, y_test)
+    clf.multNB()
+    clf.SelfNaiveByes()
+    
+    '''
 
+    '''
+----------    USED FOR STACKED ENSEMBLE USING VOTING ------
+    X_train, X_test, y_train, y_test = Feature_Processer().split(data_train,data_test,0.9,True)
+    
+    
+    tf_idf_vectorizer = TfidfVectorizer(ngram_range=(1,1),min_df =1)
+    tf_idf_vectorizer.fit(X_train)
+    
+    X_vali = tf_idf_vectorizer.transform(X_vali)
+    X_train1 = tf_idf_vectorizer.transform(X_train)
+    
+    clf = classifier(X_train1, X_vali, y_train, y_test)
+    
+    svm_pred = clf.svm(0.2)
+    multNB1_pred = clf.multNB()
+    #clf.QDA()
+    
+    X_train2, X_test2 = Feature_Processer().count_vector_features_produce(X_train,X_test,1)
+    clf2 = classifier(X_train2, X_vali, y_train, y_test)
+    numNB2_pred = clf2.multNB()
+    log_pred = clf.logistic(10,1000)
+    voted= []
+    
+    for i in range(len(svm_pred)):
+        group = [svm_pred[i],multNB1_pred[i],log_pred[i],numNB2_pred[i]]
+        c = Counter(group)
+        value, count = c.most_common()[0]
+        voted.append(value)
+    
+    #print(" MultinomialNB Regression : accurancy_is", metrics.accuracy_score(y_test, voted))
+    
+    with open('stacked_predict.csv', 'w') as f:
+            for item in voted:
+                f.write("%s\n" % item)
+    
+    '''
 if __name__ == "__main__":
     main()
