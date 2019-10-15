@@ -367,7 +367,7 @@ def main():
     '''
 
     '''
-----------    USED FOR STACKED ENSEMBLE USING VOTING ------
+#----------    USED FOR STACKED ENSEMBLE USING VOTING ------
     X_train, X_test, y_train, y_test = Feature_Processer().split(data_train,data_test,0.9,True)
     
     
