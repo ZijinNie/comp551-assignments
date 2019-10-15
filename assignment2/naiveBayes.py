@@ -82,5 +82,4 @@ class Berboulli_Naive_Bayes:
         return count/ len(X_test)
         
 
-#TODO: Accurancy function needed.
             
