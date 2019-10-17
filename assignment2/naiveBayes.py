@@ -26,6 +26,7 @@ class Berboulli_Naive_Bayes:
             for i in range(len(yk)):
                 if yk[i] == (k+1):
                     y_sum +=1
+                    
             
             theta_k[k] = y_sum/ len(yk)
             
@@ -34,11 +35,11 @@ class Berboulli_Naive_Bayes:
             for j in range(X.shape[1]):
                 num_j_k = 0
                 for l in range(X.shape[0]):
-                    if (yk[l] == j+1) & (X[l,j] == 1):
+                    if (yk[l] == k+1) & (X[l,j] == 1):
                         num_j_k +=1
                         
                 theta_j_k[k,j] = (num_j_k + 1) / (y_sum + 2)
-                #print(theta_j_k[k,j])
+                print('theta, j, k',j ,k, 'is',theta_j_k[k,j])
             
             
         self.theta_k = theta_k
@@ -59,7 +60,7 @@ class Berboulli_Naive_Bayes:
                 prob = np.log(theta_k[k])
                 for j in range(theta_j_k.shape[1]):
                     prob += x[i][j] *np.log(theta_j_k[k][j]) +(1-x[i][j])*np.log(1-theta_j_k[k][j])
-                print(prob)
+                #print(prob)
                 if prob > bestProb:
                     bestClass = k+1
                     bestProb = prob
@@ -79,7 +80,7 @@ class Berboulli_Naive_Bayes:
         for i in range(len(Y_predict)):
             if Y_predict[i] == Y_test[i]:
                 count +=1
-        return count/ len(X_test)
+        return "score for out NB is ", count/ len(X_test)
         
 
             
