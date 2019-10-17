@@ -17,7 +17,7 @@ from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from nltk.stem.porter import PorterStemmer
 # help_feature_process
-from sklearn.model_selection import train_test_split, KFold
+from sklearn.model_selection import train_test_split, KFold, GridSearchCV
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from nltk import bigrams
@@ -161,27 +161,43 @@ class classifier:
         self.x_test = x_test
         self.y_test = y_test
 
-
-
-
-
-    def decision_tree(self):
-        # criterion=’gini’, splitter=’best’, max_depth=None, min_samples_split=2, min_samples_leaf=1, min_weight_fraction_leaf=0.0, max_features=None, random_state=None, max_leaf_nodes=None, min_impurity_decrease=0.0, min_impurity_split=None, class_weight=None, presort=False
-        model = DecisionTreeClassifier(criterion='gini', splitter='best', max_depth=None, min_samples_split=0.1)
-        preds = model.fit(self.x_train, self.y_train)
-        scores3 = cross_val_score(model, self.x_train, self.y_train, cv=5, scoring='accuracy')
-        print("Score of decision tree in Cross Validation", scores3.mean() * 100)
-        print("decision tree  : accurancy_is", metrics.accuracy_score(self.y_test, model.predict(self.x_test)))
-        cm = confusion_matrix(self.y_test, preds)
-        # print("Confusion Matrix\n", cm)
-        # print("Report", classification_report(self.y_test, preds))
     def random_forest(self):
-        model = RandomForestClassifier(n_estimators = 10, criterion = 'entropy', random_state = 1)
-        model.fit(self.x_train, self.y_train)
-        scores3 = cross_val_score(model, self.x_train, self.y_train, cv=5, scoring='accuracy')
-        print("Score of decision tree in Cross Validation", scores3.mean() * 100)
-        y_pred = classifier.predict(self.x_test)
-        print("random forest  : accurancy_is", metrics.accuracy_score(self.y_test,y_pred))
+
+        parameter_space = {
+            "n_estimators": [25, 30],
+            "criterion": ["gini"],
+            "min_samples_leaf": [ 4, 6, 8],
+        }
+
+        # scores = ['precision', 'recall', 'roc_auc']
+        scores = ['precision_macro']
+
+        for score in scores:
+            print("# Tuning hyper-parameters for %s" % score)
+            print()
+
+            clf = RandomForestClassifier(random_state=14)
+            grid = GridSearchCV(clf, parameter_space, cv=5, scoring='%s' % score)
+            # scoring='%s_macro' % score：precision_macro、recall_macro是用于multiclass/multilabel任务的
+            grid.fit(self.x_train, self.y_train)
+
+            print("Best parameters set found on development set:")
+            print()
+            print(grid.best_params_)
+            print()
+            print("Grid scores on development set:")
+            print()
+            means = grid.cv_results_['mean_test_score']
+            stds = grid.cv_results_['std_test_score']
+            for mean, std, params in zip(means, stds, grid.cv_results_['params']):
+                print("%0.3f (+/-%0.03f) for %r"
+                      % (mean, std * 2, params))
+
+        #model.fit(self.x_train, self.y_train)
+        #scores3 = cross_val_score(model, self.x_train, self.y_train, cv=5, scoring='accuracy')
+        #print("Score of decision tree in Cross Validation", scores3.mean() * 100)
+        #y_pred = model.predict(self.x_test)
+       # print("random forest  : accurancy_is", metrics.accuracy_score(self.y_test,y_pred))
 
 class main:
     data_raw = Reader().read("reddit_train.csv")
@@ -194,11 +210,11 @@ class main:
     X_train, X_test, y_train, y_test = Feature_Processer().split(data_train, data_test, 0.9)
     X_train, X_test = Feature_Processer().tf_idf(X_train, X_test, (1, 1), 1)
 
-    scaler = StandardScaler()
-    X_train = scaler.fit_transform(X_train)
-    X_test = scaler.transform(X_test)
+    #scaler = StandardScaler()
+    #X_train = scaler.fit_transform(X_train)
+    #X_test = scaler.transform(X_test)
 
-    clf = classifier(X_train, X_test, y_train.raval(), y_test.raval())
+    clf = classifier(X_train, X_test, y_train, y_test)
     clf.random_forest()
 
 if __name__ == "__main__":
