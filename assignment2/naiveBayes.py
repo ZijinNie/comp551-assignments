@@ -83,5 +83,4 @@ class Berboulli_Naive_Bayes:
         return "score for out NB is ", count/ len(X_test)
         
 
-#TODO: Accurancy function needed. 
             
