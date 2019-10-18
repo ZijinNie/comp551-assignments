@@ -15,12 +15,13 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.naive_bayes import MultinomialNB
 from naiveBayes import Berboulli_Naive_Bayes
-from sklearn.ensemble import BaggingClassifier as BC
+from sklearn.ensemble import BaggingClassifier as BC, RandomForestClassifier
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.datasets import make_classification as mc
 from sklearn.linear_model import SGDClassifier as SGD
+import random_forest as rf
 #help_clean
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
@@ -322,6 +323,14 @@ class classifier:
         print(" SGD : accurancy_is", metrics.accuracy_score(self.y_test, pred))
         return pred
 
+    def random_forest(self):
+
+        clf = RandomForestClassifier(random_state=14,n_estimators=150,min_samples_leaf=2)
+        clf.fit(self.x_train, self.y_train)
+        y_pred = clf.predict(self.x_test)
+        return y_pred
+
+
 def main():
 
     data_raw = Reader().read("reddit_train.csv")
@@ -407,6 +416,8 @@ def stack():
     log_pred = clf.logistic(10,1000)
     SDG = clf.SGD(alpha = 5e-05, penalty = 'l2')
     clf.KNeighbors(150)
+
+
     #clf.QDA()
 
     X_train_bi, X_test_bi = Feature_Processer().count_vector_features_produce(X_train,X_test,1)
@@ -462,6 +473,7 @@ def testMulNB(alpha):
     for i in [0.01, 0., 0.2, 0.3, 0.5, 1, 5]:
         print('alpha is ',i)
         clf.multNB(alpha = i)
+
 if __name__ == "__main__":
     #main()
     stack()

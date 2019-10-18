@@ -47,7 +47,6 @@ class Reader:
     def shuffle(self,df):
         df.shuffle()
 
-    #TODO: write to file latter
     def write(self,name):
         f = open(name, "w")
         for line in self.data:
@@ -176,25 +175,25 @@ class main:
     data_train = data_raw['comments']
     data_test = data_raw['subreddits']
     # use_lemmer,use_stemmer, use_stopwords
-    cleaner_train = Cleaner(data_train, False, False, False)
+    cleaner_train = Cleaner(data_train, True, False, False)
     cleaner_train.cleaned()
 
     X_train, X_test, y_train, y_test = Feature_Processer().split(data_train, data_test, 0.9)
     X_train, X_test = Feature_Processer().tf_idf(X_train, X_test, (1, 1), 1)
 
     #clf = classifier(X_train, X_test, y_train, y_test)
-    enc = OrdinalEncoder()
-    X = [['worldnews', 1], ['canada', 2], ['AskReddit', 3],['wow',4],['conspiracy',5],
-         ['nba',6],['leagueoflegends',7],['soccer',8],['funny',9],['movies',10],
-         ['anime',11],['Overwatch',12],['trees',13],['GlobalOffensive',14],['nfl',15],
-        ['europe',16],['Music',20],['baseball',17],['hockey',18],['gameofthrones',19]]
-    enc.fit(X)
-    y_train_matrix= y_train.values.reshape(len(y_train),1)
+    #enc = OrdinalEncoder()
+    #X = [['worldnews', 1], ['canada', 2], ['AskReddit', 3],['wow',4],['conspiracy',5],
+    #     ['nba',6],['leagueoflegends',7],['soccer',8],['funny',9],['movies',10],
+    #     ['anime',11],['Overwatch',12],['trees',13],['GlobalOffensive',14],['nfl',15],
+    #    ['europe',16],['Music',20],['baseball',17],['hockey',18],['gameofthrones',19]]
+    #enc.fit(X)
+   # y_train_matrix= y_train.values.reshape(len(y_train),1)
 
-    y_test_matrix = y_test.values.reshape(len(y_test), 1)
-    y_train_matrix = enc.transform(y_train_matrix)
-    y_test_matrix=enc.transform(y_test_matrix)
-    print(y_train_matrix)
+    #y_test_matrix = y_test.values.reshape(len(y_test), 1)
+    #y_train_matrix = enc.transform(y_train_matrix)
+    #y_test_matrix=enc.transform(y_test_matrix)
+    #print(y_train_matrix)
     #clf.multNB()
     # read in data
 
@@ -203,16 +202,17 @@ class main:
     #dtrain = xgb.DMatrix(X_train,y_train_matrix)
     #dtest = xgb.DMatrix(X_test, y_test_matrix)
     # specify parameters via map
-    param = {'booster': 'gbtree','max_depth':6,'num_class': 20,'lambda':2, 'eta': 1, 'silent': 1, 'objective': 'multi:softmax'}
+    param = {'booster': 'gbtree','min_child_weight':2,'max_depth':6,'num_class': 20,'lambda':2, 'eta': 0.3, 'silent': 0, 'objective': 'multi:softmax'}
     num_round = 2
     #kf = KFold(n_splits=5, shuffle=True, random_state=1)
     #for train_index, test_index in kf.split(X_train):
-    xgb_model = xgb.XGBClassifier().fit(X_train, y_train)
+
+    xgb_model = xgb.XGBClassifier(booster='gbtree',min_child_weight=2,objective='multi:softmax',n_estimators=150,eta= 0.3,n_jobs=-1).fit(X_train, y_train)
     predictions = xgb_model.predict(X_test)
     actuals = y_test
-    print(confusion_matrix(actuals, predictions))
+    #print(confusion_matrix(actuals, predictions))
 
-    #print("bst  : accurancy_is", metrics.accuracy_score(y_test,predictions ))
+    print("bst  : accurancy_is", metrics.accuracy_score(actuals,predictions))
 
 if __name__ == "__main__":
     main()

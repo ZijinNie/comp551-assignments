@@ -15,7 +15,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.naive_bayes import MultinomialNB
 from naiveBayes import Berboulli_Naive_Bayes
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import BaggingClassifier as BC, RandomForestClassifier
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
@@ -148,7 +148,7 @@ class Cleaner:
 class Feature_Processer:
     def split(self,features_set,target_set, ratio,isShuffle):
         X_train, X_test, y_train, y_test = train_test_split(features_set, target_set, train_size=ratio,
-                                                            test_size=1-ratio, shuffle = isShuffle)
+                                                            test_size=1-ratio, random_state=14)
         return X_train, X_test, y_train, y_test
     #n_grams, min_df
     #adjustable (1,2) is not good as (1,1)
@@ -166,13 +166,6 @@ class Feature_Processer:
         vectors_test_idf = tf_idf_vectorizer.transform(X_test)
         return vectors_train_idf,vectors_test_idf
 
-    def LatentDirichletAllocation(self,X_train,X_test,thresold):
-        v1, v2= self.tf_idf(X_train,X_test,(1,1),thresold)
-        lda = LatentDirichletAllocation(n_components=20)
-        lda.fit(v1)
-        X = lda.transform(v1)
-        X_test1 =lda.transform(v2)
-        return X,X_test1
 
 class classifier:
     def __init__(self, x_train, x_test, y_train,y_test):
@@ -185,146 +178,47 @@ class classifier:
         model = LogisticRegression(C=c, dual=False, solver='saga',multi_class= 'multinomial',max_iter = epochs)
         model.fit(self.x_train, self.y_train)
         preds = model.predict(self.x_test)
-        '''
-        with open('logistic_predict.csv', 'w') as f:
-            for item in preds:
-                f.write("%s\n" % item)
-        '''
-        #scores1 = cross_val_score(model, self.x_train, self.y_train, cv=5, scoring='accuracy')
-
-        #print("Score of Logistic in Cross Validation", scores1.mean() * 100)
-
-        print("Losistic Regression : accurancy_matrix is", metrics.accuracy_score(self.y_test, preds))
-        #cm = confusion_matrix(self.y_test, preds)
-        #print("Confusion Matrix\n", cm)
-        #print("Report", classification_report(self.y_test, preds))
         return preds
-    def SelfNaiveByes(self):
-        model = Berboulli_Naive_Bayes()
-        model.train(self.x_train,self.y_train)
-        print(model.score(self.x_test,self.y_test))
-
-    def Ber_NaiveBayes(self, alpha):
-        model = BernoulliNB(alpha=alpha).fit(self.x_train, self.y_train)
-        preds = model.predict(self.x_test)
-        #scores2 = cross_val_score(model, self.x_train, self.y_train, cv=5, scoring='accuracy')
-        #print("Score of Naive Bayes", scores2.mean() * 100)
-        print("Bernoulli Naive Bayes : accurancy_matrix is", metrics.accuracy_score(self.y_test, preds))
-        #cm = confusion_matrix(self.y_test, preds)
-        #print("Confusion Matrix\n", cm)
-        #print("Report", classification_report(self.y_test, preds))
-        return preds
-    def QDA(self):
-        model = QuadraticDiscriminantAnalysis()
-        model.fit(self.x_train.toarray(), self.y_train)
-        pred=model.predict(self.x_test.toarray())
-
-        scores3 = cross_val_score(model, self.x_train.toarray(), self.y_train, cv=5, scoring='accuracy')
-        with open('QDA_predict.csv', 'w') as f:
-            for item in pred:
-                f.write("%s\n" % item)
-        print("Score of QDA in Cross Validation", scores3.mean() * 100)
-        print("QDA Regression : accurancy_is", metrics.accuracy_score(self.y_test, pred))
 
     def svm(self, c):
         #n_estimators = 10
         model = LinearSVC(C= c, class_weight='balanced')
-        #model = BC(SVC(C= c, class_weight='balanced', kernel= kernel), max_samples= 1.0, n_estimators=n_estimators, n_jobs = -1)
         print("start fitting")
         model.fit(self.x_train, self.y_train)
         preds = model.predict(self.x_test)
-        '''
-        with open('svm_predict.csv', 'w') as f:
-            for item in preds:
-                f.write("%s\n" % item)
-            '''
-        #scores3 = cross_val_score(model, self.x_train, self.y_train, cv=5, scoring='accuracy')
-        #print("Score of SVM in Cross Validation", scores3.mean() * 100)
-
-        print("SVM Regression : accurancy_is", metrics.accuracy_score(self.y_test, preds))
-        #cm = confusion_matrix(self.y_test, preds)
-        #print("Confusion Matrix\n", cm)
-        #print("Report", classification_report(self.y_test, preds))
         return preds
 
-
-    def decision_tree(self):
-        #criterion=’gini’, splitter=’best’, max_depth=None, min_samples_split=2, min_samples_leaf=1, min_weight_fraction_leaf=0.0, max_features=None, random_state=None, max_leaf_nodes=None, min_impurity_decrease=0.0, min_impurity_split=None, class_weight=None, presort=False
-        model = DecisionTreeClassifier(criterion='gini', splitter='best', max_depth=None,min_samples_split=0.1)
-        preds =model.fit(self.x_train, self.y_train)
-        scores3 = cross_val_score(model, self.x_train, self.y_train, cv=5, scoring='accuracy')
-        print("Score of decision tree in Cross Validation", scores3.mean() * 100)
-        print("decision tree  : accurancy_is", metrics.accuracy_score(self.y_test, model.predict(self.x_test)))
-        #cm = confusion_matrix(self.y_test, preds)
-        # print("Confusion Matrix\n", cm)
-        # print("Report", classification_report(self.y_test, preds))
-
-    def dummy(self):
-        clf = DummyClassifier(strategy='stratified', random_state=0)
-        clf.fit(self.x_train, self.y_train)
-        score = clf.score(self.x_test, self.y_test)
-        print("Random Baseline's accurancy", score)
-
     def multNB(self, alpha):
-        #n_estimators = 10
-        #model = BC( MultinomialNB(alpha = 0.5), max_samples=1.0, max_features=1.0, n_estimators=n_estimators, n_jobs = -1)
         model = MultinomialNB(alpha = alpha)
         model.fit(self.x_train, self.y_train)
         pred = model.predict(self.x_test)
-        '''
-        with open('mulNB_predict.csv', 'w') as f:
-            for item in pred:
-                f.write("%s\n" % item)
-                '''
-        #scores3 = cross_val_score(model, self.x_train, self.y_train, cv=5, scoring='accuracy')
-        #print("Score of MultinomialNB in Cross Validation", scores3.mean() * 100)
-
-        print(" MultinomialNB Regression : accurancy_is", metrics.accuracy_score(self.y_test, pred))
-
         return pred
 
     def KNeighbors(self, iter):
         model = KNeighborsClassifier(n_neighbors =iter, weights = 'uniform', algorithm = 'auto', n_jobs = -1)
         model.fit(self.x_train, self.y_train)
         predict = model.predict(self.x_test)
-        print(" kneighbors Regression : accurancy_is", metrics.accuracy_score(self.y_test, predict))
-        return predict
-    def KNeighbors_en(self, iter):
-        n_estimators = 10
-        model = BC(KNeighborsClassifier(n_neighbors =iter, weights = 'uniform', algorithm = 'auto', n_jobs = -1), max_samples= 0.5, n_estimators=n_estimators, n_jobs = -1)
-        model.fit(self.x_train, self.y_train)
-        predict = model.predict(self.x_test)
-        print("Ensemble kneighbors Regression : accurancy_is", metrics.accuracy_score(self.y_test, predict))
+        #print(" kneighbors Regression : accurancy_is", metrics.accuracy_score(self.y_test, predict))
         return predict
 
-    def NB(self):
-        model =Berboulli_Naive_Bayes()
-        model.train(self.x_train,self.y_train)
-        model.fit(self.x_train)
+    def Ber_NaiveBayes(self, alpha):
+        model = BernoulliNB(alpha=alpha).fit(self.x_train, self.y_train)
+        preds = model.predict(self.x_test)
+        return preds
 
-    def LDA(self):
-        model  = LDA()
-        model.fit(self.x_train, self.y_train)
-        pred = model.predict(self.x_test)
-
-        scores3 = cross_val_score(model, self.x_train, self.y_train, cv=5, scoring='accuracy')
-        print("Score of LDA in Cross Validation", scores3.mean() * 100)
-
-        print(" LDA : accurancy_is", metrics.accuracy_score(self.y_test, pred))
-        
     def SGD(self, alpha, penalty):
-        model  = SGD(alpha = alpha, penalty =penalty)
+        model  = SGD(,alpha = alpha, penalty =penalty)
         model.fit(self.x_train, self.y_train)
         pred = model.predict(self.x_test)
 
         #scores3 = cross_val_score(model, self.x_train, self.y_train, cv=5, scoring='accuracy')
         #print("Score of LDA in Cross Validation", scores3.mean() * 100)
 
-        print(" SGD : accurancy_is", metrics.accuracy_score(self.y_test, pred))
+        #print(" SGD : accurancy_is", metrics.accuracy_score(self.y_test, pred))
         return pred
 
     def random_forest(self):
-        clf = RandomForestClassifier(random_state=14,n_estimators=100,min_samples_leaf=2)
+        clf = RandomForestClassifier(n_estimators=100,min_samples_leaf=2)
         clf.fit(self.x_train, self.y_train)
         y_pred = clf.predict(self.x_test)
         return y_pred
@@ -343,21 +237,10 @@ def main():
     X_train, X_test = Feature_Processer().tf_idf(X_train, X_test,(1,1),1)
 
     clf = classifier(X_train, X_test, y_train, y_test)
-    clf.svm(0.2)
-    '''
------------    USED FOR TESTING PERFORMANCE OF OUR MODEL --------
+    for k in [100,150,200,250,300]:
+        print('k is', k )
+        clf.KNeighbors(k)
 
-    data, label = mc(n_samples = 1000, n_features = 5, n_classes = 2, n_redundant = 0, n_repeated = 0, shift = 0)
-    data = np.where(data > 0, 1, 0)
-    label = np.where(label == 0, 1,2)
-    X_train, X_test, y_train, y_test = Feature_Processer().split(data,label,0.9,True)
-    print(X_train)
-
-    clf = classifier(X_train, X_test, y_train, y_test)
-    clf.multNB()
-    clf.SelfNaiveByes()
-
-    '''
 
 def stack():
     #----------    USED FOR STACKED ENSEMBLE USING VOTING ------
@@ -368,47 +251,47 @@ def stack():
     cleaner_train = Cleaner(data_train,True,False,False)
     cleaner_train.cleaned()
     
-    #reddit_test= Reader().read("reddit_test.csv")
-    #reddit_test = reddit_test['comments']
-    #cleaner_train = Cleaner(reddit_test,True,False,False)
-    #cleaner_train.cleaned()
+    reddit_test= Reader().read("reddit_test.csv")
+    reddit_test = reddit_test['comments']
+    cleaner_train = Cleaner(reddit_test,False,False,False)
+    cleaner_train.cleaned()
     
-    X_train, X_test, y_train, y_test = Feature_Processer().split(data_train,data_test,0.9,True)
-    #X_train = data_train
-    #y_train = data_test
+    #X_train, X_test, y_train, y_test = Feature_Processer().split(data_train,data_test,0.9,True)
+    X_train = data_train
+    y_train = data_test
     
     tf_idf_vectorizer = TfidfVectorizer(ngram_range=(1,1),min_df =1)
     tf_idf_vectorizer.fit(X_train)
 
     #X_vali = tf_idf_vectorizer.transform(X_vali)
     X_train_tf = tf_idf_vectorizer.transform(X_train)
-    X_test_tf = tf_idf_vectorizer.transform(X_test)
-    #reddit_test_tf= tf_idf_vectorizer.transform(reddit_test)
-    clf = classifier(X_train_tf,X_test_tf, y_train, y_test)
+    #X_test_tf = tf_idf_vectorizer.transform(X_test)
+    reddit_test_tf= tf_idf_vectorizer.transform(reddit_test)
+    clf = classifier(X_train_tf,reddit_test_tf, y_train, [])
 
     svm_pred = clf.svm(0.2)
     multNB1_pred = clf.multNB(alpha = 0.2)
     log_pred = clf.logistic(10,1000)
     SDG = clf.SGD(alpha = 5e-05, penalty = 'l2')
-    k_pred = clf.KNeighbors(150)
-    rf_pred = clf.random_forest()
+    kn_pred = clf.KNeighbors(150)
 
-    X_train_bi, X_test_bi = Feature_Processer().count_vector_features_produce(X_train,X_test,1)
-    #X_train_bi, reddit_test_bi = Feature_Processer().count_vector_features_produce(X_train,reddit_test,1)
 
-    clf2 = classifier(X_train_bi, X_test_bi, y_train, y_test)
+    #X_train_bi, X_test_bi = Feature_Processer().count_vector_features_produce(X_train,X_test,1)
+    X_train_bi, reddit_test_bi = Feature_Processer().count_vector_features_produce(X_train,reddit_test,1)
+
+    clf2 = classifier(X_train_bi, reddit_test_bi, y_train, [])
     numNB2_pred = clf2.multNB(alpha = 0.2)
     bnb = clf2.Ber_NaiveBayes(alpha = 0.024)
     
     voted= []
 
     for i in range(len(svm_pred)):
-        group = [svm_pred[i],svm_pred[i],multNB1_pred[i],multNB1_pred[i],log_pred[i],numNB2_pred[i], bnb[i], SDG[i], k_pred[i],rf_pred[i]]
+        group = [svm_pred[i],svm_pred[i],multNB1_pred[i],multNB1_pred[i],log_pred[i],numNB2_pred[i], bnb[i], SDG[i]]
         c = Counter(group)
         value, count = c.most_common()[0]
         voted.append(value)
 
-    print("Stacked : accurancy_is", metrics.accuracy_score(y_test, voted))
+    #print("Stacked : accurancy_is", metrics.accuracy_score(y_test, voted))
     
     with open('stacked_predict4.csv', 'w') as f:
             for item in voted:

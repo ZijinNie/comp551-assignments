@@ -161,41 +161,43 @@ class classifier:
 
     def random_forest(self):
 
-        parameter_space = {
-            "n_estimators": [150],
-            "criterion": ["gini"],
-            "min_samples_leaf": [1,2],
-        }
+        #parameter_space = {
+        #    "n_estimators": [150],
+        #    "criterion": ["gini"],
+        #    "min_samples_leaf": [1,2],
+        #}
 
         # scores = ['precision', 'recall', 'roc_auc']
-        scores = ['precision_macro']
+        #scores = ['precision_macro']
+        clf = RandomForestClassifier(random_state=14,n_estimators=150,min_samples_leaf=2)
+        #for score in scores:
+        #    print("# Tuning hyper-parameters for %s" % score)
+        #    print()
 
-        for score in scores:
-            print("# Tuning hyper-parameters for %s" % score)
-            print()
-
-            clf = RandomForestClassifier(random_state=14)
-            grid = GridSearchCV(clf, parameter_space, cv=5, scoring='%s' % score)
+        #    clf = RandomForestClassifier(random_state=14)
+        #    grid = GridSearchCV(clf, parameter_space, cv=5, scoring='%s' % score)
             # scoring='%s_macro' % score：precision_macro、recall_macro是用于multiclass/multilabel任务的
-            grid.fit(self.x_train, self.y_train)
+        #    grid.fit(self.x_train, self.y_train)
 
-            print("Best parameters set found on development set:")
-            print()
-            print(grid.best_params_)
-            print()
-            print("Grid scores on development set:")
-            print()
-            means = grid.cv_results_['mean_test_score']
-            stds = grid.cv_results_['std_test_score']
-            for mean, std, params in zip(means, stds, grid.cv_results_['params']):
-                print("%0.3f (+/-%0.03f) for %r"
-                      % (mean, std * 2, params))
+        #    print("Best parameters set found on development set:")
+        #    print()
+        #    print(grid.best_params_)
+        #    print()
+        #    print("Grid scores on development set:")
+        #    print()
+        #    means = grid.cv_results_['mean_test_score']
+        #    stds = grid.cv_results_['std_test_score']
+        #    for mean, std, params in zip(means, stds, grid.cv_results_['params']):
+        #        print("%0.3f (+/-%0.03f) for %r"
+        #              % (mean, std * 2, params))
 
-        #model.fit(self.x_train, self.y_train)
-        #scores3 = cross_val_score(model, self.x_train, self.y_train, cv=5, scoring='accuracy')
+        clf.fit(self.x_train, self.y_train)
+        y_pred = clf.predict(self.x_test)
+        return y_pred
+        #scores3 = cross_val_score(clf, self.x_train, self.y_train, cv=5, scoring='accuracy')
         #print("Score of decision tree in Cross Validation", scores3.mean() * 100)
-        #y_pred = model.predict(self.x_test)
-       # print("random forest  : accurancy_is", metrics.accuracy_score(self.y_test,y_pred))
+        #y_pred = clf.predict(self.x_test)
+        #print("random forest  : accurancy_is", metrics.accuracy_score(self.y_test,y_pred))
 
 class main:
     data_raw = Reader().read("reddit_train.csv")
