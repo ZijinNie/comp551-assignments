@@ -37,8 +37,6 @@ class Reader:
 
     def shuffle(self,df):
         df.shuffle()
-
-    #TODO: write to file latter
     def write(self,name):
         f = open(name, "w")
         for line in self.data:
@@ -148,7 +146,7 @@ class Feature_Processer:
         return X, X_test
 
     def tf_idf(self,X_train,X_test,n_grams,thresold):
-        tf_idf_vectorizer = TfidfVectorizer(ngram_range=n_grams,min_df =thresold,binary=True)
+        tf_idf_vectorizer = TfidfVectorizer(ngram_range=n_grams,min_df =thresold)
         vectors_train_idf = tf_idf_vectorizer.fit_transform(X_train)
         vectors_test_idf = tf_idf_vectorizer.transform(X_test)
         return vectors_train_idf,vectors_test_idf
@@ -164,9 +162,9 @@ class classifier:
     def random_forest(self):
 
         parameter_space = {
-            "n_estimators": [25, 30],
+            "n_estimators": [150],
             "criterion": ["gini"],
-            "min_samples_leaf": [ 4, 6, 8],
+            "min_samples_leaf": [1,2],
         }
 
         # scores = ['precision', 'recall', 'roc_auc']

@@ -170,58 +170,6 @@ class classifier:
         self.x_test = x_test
         self.y_test = y_test
 
-    def logistic(self, c, epochs):
-        # ,max_iter = epochs
-        model = LogisticRegression(C=c, dual=False, solver='lbfgs', multi_class='multinomial')
-        model.fit(self.x_train, self.y_train)
-        preds = model.predict(self.x_test)
-        scores1 = cross_val_score(model, self.x_train, self.y_train, cv=5, scoring='accuracy')
-        print("Score of Logistic in Cross Validation", scores1.mean() * 100)
-        print("Losistic Regression : accurancy_matrix is", metrics.accuracy_score(self.y_test, preds))
-
-    def Ber_NaiveBayes(self, alpha):
-        model = BernoulliNB(alpha=alpha).fit(self.x_train, self.y_train)
-        preds = model.predict(self.x_test)
-        scores2 = cross_val_score(model, self.x_train, self.y_train, cv=5, scoring='accuracy')
-        print("Score of Naive Bayes", scores2.mean() * 100)
-        print("Bernoulli Naive Bayes : accurancy_matrix is", metrics.accuracy_score(self.y_test, preds))
-        cm = confusion_matrix(self.y_test, preds)
-        # print("Confusion Matrix\n", cm)
-        # print("Report", classification_report(self.y_test, preds))
-
-    def svm(self, c):
-        model = LinearSVC(C=c)
-        model.fit(self.x_train, self.y_train)
-        preds = model.predict(self.x_test)
-
-        scores3 = cross_val_score(model, self.x_train, self.y_train, cv=5, scoring='accuracy')
-        print("Score of SVM in Cross Validation", scores3.mean() * 100)
-        print("SVM Regression : accurancy_is", metrics.accuracy_score(self.y_test, preds))
-        cm = confusion_matrix(self.y_test, preds)
-        # print("Confusion Matrix\n", cm)
-        # print("Report", classification_report(self.y_test, preds))
-
-    def decision_tree(self):
-        # criterion=’gini’, splitter=’best’, max_depth=None, min_samples_split=2, min_samples_leaf=1, min_weight_fraction_leaf=0.0, max_features=None, random_state=None, max_leaf_nodes=None, min_impurity_decrease=0.0, min_impurity_split=None, class_weight=None, presort=False
-        model = DecisionTreeClassifier(criterion='gini', splitter='best', max_depth=None, min_samples_split=0.1)
-        preds = model.fit(self.x_train, self.y_train)
-        scores3 = cross_val_score(model, self.x_train, self.y_train, cv=5, scoring='accuracy')
-        print("Score of decision tree in Cross Validation", scores3.mean() * 100)
-        print("decision tree  : accurancy_is", metrics.accuracy_score(self.y_test, model.predict(self.x_test)))
-        cm = confusion_matrix(self.y_test, preds)
-        # print("Confusion Matrix\n", cm)
-        # print("Report", classification_report(self.y_test, preds))
-    def random_forest(self):
-        model = RandomForestClassifier
-
-    def multNB(self):
-        model = MultinomialNB()
-        preds = model.fit(self.x_train, self.y_train)
-        scores3 = cross_val_score(model, self.x_train, self.y_train, cv=5, scoring='accuracy')
-        print("Score of MultinomialNB in Cross Validation", scores3.mean() * 100)
-        print(" MultinomialNB Regression : accurancy_is",
-              metrics.accuracy_score(self.y_test, model.predict(self.x_test)))
-
 
 class main:
     data_raw = Reader().read("reddit_train.csv")
@@ -256,13 +204,13 @@ class main:
     #dtest = xgb.DMatrix(X_test, y_test_matrix)
     # specify parameters via map
     param = {'booster': 'gbtree','max_depth':6,'num_class': 20,'lambda':2, 'eta': 1, 'silent': 1, 'objective': 'multi:softmax'}
-    num_round = 5
-    kf = KFold(n_splits=5, shuffle=True, random_state=1)
-    for train_index, test_index in kf.split(X_train):
-        xgb_model = xgb.XGBClassifier().fit(X_train[train_index], y_train_matrix[train_index])
-        predictions = xgb_model.predict(X_test[test_index])
-        actuals = y_test_matrix[test_index]
-        print(confusion_matrix(actuals, predictions))
+    num_round = 2
+    #kf = KFold(n_splits=5, shuffle=True, random_state=1)
+    #for train_index, test_index in kf.split(X_train):
+    xgb_model = xgb.XGBClassifier().fit(X_train, y_train)
+    predictions = xgb_model.predict(X_test)
+    actuals = y_test
+    print(confusion_matrix(actuals, predictions))
 
     #print("bst  : accurancy_is", metrics.accuracy_score(y_test,predictions ))
 
