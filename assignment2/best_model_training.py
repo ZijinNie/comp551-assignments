@@ -14,7 +14,6 @@ from sklearn.dummy import DummyClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.naive_bayes import MultinomialNB
-from naiveBayes import Berboulli_Naive_Bayes
 from sklearn.ensemble import BaggingClassifier as BC, RandomForestClassifier
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.neighbors import KNeighborsClassifier
@@ -50,13 +49,6 @@ class Reader:
 
     def shuffle(self, df):
         df.shuffle()
-
-    # TODO: write to file latter
-    def write(self, name):
-        f = open(name, "w")
-        for line in self.data:
-            f.write(line)
-        f.close()
 
     def extractColToString(self, df, col_name):
         data_p = [(line) for line in self.file]
@@ -116,21 +108,11 @@ class Cleaner:
             stemmed.append([porter.stem(word) for word in s])
         self.words_list = stemmed
 
-    def clean_low_puc_nc_le_stop(self):
-        cleaned = []
-        # porter = PorterStemmer()
-        lemmatizer = WordNetLemmatizer()
-        stop_words = stopwords.words('english')
-        table = str.maketrans('', '', string.punctuation)
-        for s in self.words_list:
-            cleaned.append(
-                [lemmatizer.lemmatize(word.translate(table).lower()) for word in s if word not in stop_words])
-        self.words_list = cleaned
 
     def cleaned(self):
-        self.lowercase()
+        #self.lowercase()
         # self.remove_punc()
-        self.remove_noncharacter()
+        #self.remove_noncharacter()
         if self.l:
             self.lemmatizer()
         if self.s:
@@ -150,9 +132,9 @@ class Cleaner:
 # 3 feature processing
 
 class Feature_Processer:
-    def split(self, features_set, target_set, ratio, isShuffle):
+    def split(self, features_set, target_set, ratio):
         X_train, X_test, y_train, y_test = train_test_split(features_set, target_set, train_size=ratio,
-                                                            test_size=1 - ratio, random_state=14)
+                                                            test_size=1 - ratio, random_state=1)
         return X_train, X_test, y_train, y_test
 
     # n_grams, min_df
@@ -183,6 +165,7 @@ class classifier:
         model = LogisticRegression(C=c, dual=False, solver='saga', multi_class='multinomial', max_iter=epochs)
         model.fit(self.x_train, self.y_train)
         preds = model.predict(self.x_test)
+
         return preds
 
     def svm(self, c):
@@ -191,6 +174,9 @@ class classifier:
         print("start fitting")
         model.fit(self.x_train, self.y_train)
         preds = model.predict(self.x_test)
+        scores3 = cross_val_score(model, self.x_train, self.y_train, cv=5, scoring='accuracy')
+        print("Score of svm", scores3.mean() * 100)
+        print("Score of svm", metrics.accuracy_score(self.y_test, preds))
         return preds
 
     def multNB(self, alpha):
@@ -223,7 +209,7 @@ class classifier:
         return pred
 
     def random_forest(self):
-        clf = RandomForestClassifier(n_estimators=100, min_samples_leaf=2)
+        clf = RandomForestClassifier(n_estimators=200, min_samples_leaf=2,n_jobs=-1)
         clf.fit(self.x_train, self.y_train)
         y_pred = clf.predict(self.x_test)
         return y_pred
@@ -253,45 +239,42 @@ def stack():
     data_train = data_raw['comments']
     data_test = data_raw['subreddits']
     # use_lemmer,use_stemmer, use_stopwords
-    cleaner_train = Cleaner(data_train, False, False, True)
-    cleaner_train.cleaned()
+    cleaner_train = Cleaner(data_train, False, True, True)
+    data_train = cleaner_train.cleaned()
 
-    X_train, X_test, y_train, y_test = Feature_Processer().split(data_train,data_test,0.9,True)
+    X_train, X_test, y_train, y_test = Feature_Processer().split(data_train,data_test,0.9)
 
 
     tf_idf_vectorizer = TfidfVectorizer(ngram_range=(1, 1), min_df=1)
     tf_idf_vectorizer.fit(X_train)
 
-    # X_vali = tf_idf_vectorizer.transform(X_vali)
     X_train_tf = tf_idf_vectorizer.transform(X_train)
     X_test_tf = tf_idf_vectorizer.transform(X_test)
-    #reddit_test_tf = tf_idf_vectorizer.transform(reddit_test)
+
     clf = classifier(X_train_tf, X_test_tf, y_train, y_test)
 
     svm_pred = clf.svm(0.2)
     multNB1_pred = clf.multNB(alpha=0.2)
-    log_pred = clf.logistic(10, 1000)
+    log_pred = clf.logistic(3, 1200)
     SDG = clf.SGD(alpha=5e-05, penalty='l2')
-    kn_pred = clf.KNeighbors(150)
+    kn_pred = clf.KNeighbors(110)
     rf_pred = clf.random_forest()
 
     X_train_bi, X_test_bi = Feature_Processer().count_vector_features_produce(X_train,X_test,1)
     clf2 = classifier(X_train_bi, X_test_bi, y_train, y_test)
-    numNB2_pred = clf2.multNB(alpha=0.2)
+    numNB2_pred = clf2.multNB(alpha=0.3)
     bnb = clf2.Ber_NaiveBayes(alpha=0.024)
 
     voted = []
 
     for i in range(len(svm_pred)):
-        group = [svm_pred[i], svm_pred[i], multNB1_pred[i], multNB1_pred[i], log_pred[i], numNB2_pred[i], bnb[i],
+        group = [svm_pred[i],svm_pred[i], multNB1_pred[i], multNB1_pred[i],log_pred[i], numNB2_pred[i],numNB2_pred[i],bnb[i],
                  SDG[i],kn_pred[i],rf_pred[i]]
         c = Counter(group)
         value, count = c.most_common()[0]
         voted.append(value)
 
     print("Stacked : accurancy_is", metrics.accuracy_score(y_test, voted))
-    #0.5777142857142857 for 3 False and kn
-    #0.5778
 
 if __name__ == "__main__":
     # main()

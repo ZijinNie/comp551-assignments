@@ -51,7 +51,6 @@ class Reader:
     def shuffle(self,df):
         df.shuffle()
 
-    #TODO: write to file latter
     def write(self,name):
         f = open(name, "w")
         for line in self.data:
@@ -198,7 +197,6 @@ class classifier:
         model = KNeighborsClassifier(n_neighbors =iter, weights = 'uniform', algorithm = 'auto', n_jobs = -1)
         model.fit(self.x_train, self.y_train)
         predict = model.predict(self.x_test)
-        #print(" kneighbors Regression : accurancy_is", metrics.accuracy_score(self.y_test, predict))
         return predict
 
     def Ber_NaiveBayes(self, alpha):
@@ -207,18 +205,14 @@ class classifier:
         return preds
 
     def SGD(self, alpha, penalty):
-        model  = SGD(,alpha = alpha, penalty =penalty)
+        model  = SGD(alpha = alpha, penalty =penalty)
         model.fit(self.x_train, self.y_train)
         pred = model.predict(self.x_test)
 
-        #scores3 = cross_val_score(model, self.x_train, self.y_train, cv=5, scoring='accuracy')
-        #print("Score of LDA in Cross Validation", scores3.mean() * 100)
-
-        #print(" SGD : accurancy_is", metrics.accuracy_score(self.y_test, pred))
         return pred
 
     def random_forest(self):
-        clf = RandomForestClassifier(n_estimators=100,min_samples_leaf=2)
+        clf = RandomForestClassifier(n_estimators=180,min_samples_leaf=2)
         clf.fit(self.x_train, self.y_train)
         y_pred = clf.predict(self.x_test)
         return y_pred
@@ -248,91 +242,47 @@ def stack():
     data_train = data_raw['comments']
     data_test = data_raw['subreddits']
     #use_lemmer,use_stemmer, use_stopwords
-    cleaner_train = Cleaner(data_train,True,False,False)
-    cleaner_train.cleaned()
     
     reddit_test= Reader().read("reddit_test.csv")
     reddit_test = reddit_test['comments']
-    cleaner_train = Cleaner(reddit_test,False,False,False)
-    cleaner_train.cleaned()
-    
-    #X_train, X_test, y_train, y_test = Feature_Processer().split(data_train,data_test,0.9,True)
+
     X_train = data_train
     y_train = data_test
     
     tf_idf_vectorizer = TfidfVectorizer(ngram_range=(1,1),min_df =1)
     tf_idf_vectorizer.fit(X_train)
 
-    #X_vali = tf_idf_vectorizer.transform(X_vali)
     X_train_tf = tf_idf_vectorizer.transform(X_train)
-    #X_test_tf = tf_idf_vectorizer.transform(X_test)
     reddit_test_tf= tf_idf_vectorizer.transform(reddit_test)
     clf = classifier(X_train_tf,reddit_test_tf, y_train, [])
 
     svm_pred = clf.svm(0.2)
-    multNB1_pred = clf.multNB(alpha = 0.2)
-    log_pred = clf.logistic(10,1000)
-    SDG = clf.SGD(alpha = 5e-05, penalty = 'l2')
-    kn_pred = clf.KNeighbors(150)
+    multNB1_pred = clf.multNB(alpha=0.2)
+    log_pred = clf.logistic(3, 1200)
+    SDG = clf.SGD(alpha=5e-05, penalty='l2')
+    kn_pred = clf.KNeighbors(110)
+    rf_pred = clf.random_forest()
 
-
-    #X_train_bi, X_test_bi = Feature_Processer().count_vector_features_produce(X_train,X_test,1)
     X_train_bi, reddit_test_bi = Feature_Processer().count_vector_features_produce(X_train,reddit_test,1)
 
     clf2 = classifier(X_train_bi, reddit_test_bi, y_train, [])
-    numNB2_pred = clf2.multNB(alpha = 0.2)
-    bnb = clf2.Ber_NaiveBayes(alpha = 0.024)
+    numNB2_pred = clf2.multNB(alpha=0.3)
+    bnb = clf2.Ber_NaiveBayes(alpha=0.024)
     
     voted= []
 
     for i in range(len(svm_pred)):
-        group = [svm_pred[i],svm_pred[i],multNB1_pred[i],multNB1_pred[i],log_pred[i],numNB2_pred[i], bnb[i], SDG[i]]
+        group = [svm_pred[i], svm_pred[i], multNB1_pred[i], multNB1_pred[i], log_pred[i], numNB2_pred[i],
+                 numNB2_pred[i], bnb[i], SDG[i], kn_pred[i], rf_pred[i]]
         c = Counter(group)
         value, count = c.most_common()[0]
         voted.append(value)
 
-    #print("Stacked : accurancy_is", metrics.accuracy_score(y_test, voted))
-    
-    with open('stacked_predict4.csv', 'w') as f:
+    with open('stacked_predict8.csv', 'w') as f:
             for item in voted:
                 f.write("%s\n" % item)
+    #print("Stacked : accurancy_is", metrics.accuracy_score(y_test, voted))
 
-    
-    
-def testBNB(alpha):
-    #alpha 0.01    0.015    0.02    0.021 0.022 0.024 0.025    0.03
-    #acc   0.5065  0.5059   0.507   0.51  0.51  0.515 0.515
-    data_raw = Reader().read("reddit_train.csv")
-
-    data_train = data_raw['comments']
-    data_test = data_raw['subreddits']
-    #use_lemmer,use_stemmer, use_stopwords
-    cleaner_train = Cleaner(data_train,True,False,False)
-    cleaner_train.cleaned()
-
-    X_train, X_test, y_train, y_test = Feature_Processer().split(data_train,data_test,0.9,True)
-    X_train, X_test = Feature_Processer().count_vector_features_produce(X_train,X_test,1)
-    clf = classifier(X_train, X_test, y_train, y_test)
-    clf.Ber_NaiveBayes(alpha = alpha)
-    
-def testMulNB(alpha):
-    data_raw = Reader().read("reddit_train.csv")
-
-    data_train = data_raw['comments']
-    data_test = data_raw['subreddits']
-    #use_lemmer,use_stemmer, use_stopwords
-    cleaner_train = Cleaner(data_train,True,False,False)
-    cleaner_train.cleaned()
-
-    X_train, X_test, y_train, y_test = Feature_Processer().split(data_train,data_test,0.9,True)
-    X_train, X_test = Feature_Processer().tf_idf(X_train, X_test,(1,1),1)
-    clf = classifier(X_train, X_test, y_train, y_test)
-    
-    for i in [0.01, 0., 0.2, 0.3, 0.5, 1, 5]:
-        print('alpha is ',i)
-        clf.multNB(alpha = i)
 if __name__ == "__main__":
-    #main()
     stack()
-    #testMulNB(alpha =1 )
         
