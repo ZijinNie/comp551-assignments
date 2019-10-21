@@ -1,6 +1,6 @@
 # 模型创建函数，KerasClassifier需要这个函数
 import numpy as np
-import pandas as pd
+
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.linear_model import LogisticRegression
@@ -26,6 +26,7 @@ class Reader:
         data_p = [(line) for line in self.file]
         return data_p
 
+
 class Feature_Processer:
     def split(self, features_set, target_set, ratio):
         X_train, X_test, y_train, y_test = train_test_split(features_set, target_set, train_size=ratio,
@@ -48,6 +49,7 @@ class Feature_Processer:
         vectors_test_idf = tf_idf_vectorizer.transform(X_test)
         return vectors_train_idf, vectors_test_idf
 
+
 class classifier:
     def __init__(self, x_train, x_test, y_train, y_test):
         self.x_train = x_train
@@ -56,7 +58,7 @@ class classifier:
         self.y_test = y_test
 
     def SGD(self, alpha, penalty):
-        model = SGD( alpha = alpha, penalty = penalty)
+        model = SGD(alpha=alpha, penalty=penalty)
         model.fit(self.x_train, self.y_train)
         pred = model.predict(self.x_test)
 
@@ -67,12 +69,13 @@ class classifier:
         return pred
 
     def random_forest(self):
-        clf = RandomForestClassifier(n_estimators=150, min_samples_leaf=2,n_jobs=-1)
+        clf = RandomForestClassifier(n_estimators=150, min_samples_leaf=2, n_jobs=-1)
         clf.fit(self.x_train, self.y_train)
         y_pred = clf.predict(self.x_test)
         return y_pred
-if __name__ == '__main__':
 
+
+if __name__ == '__main__':
     data_raw = Reader().read("reddit_train.csv")
     data_train = data_raw['comments']
     data_test = data_raw['subreddits']
@@ -80,9 +83,10 @@ if __name__ == '__main__':
     # cleaner_train = Cleaner(data_train, True, False, False)
     # data_train = cleaner_train.cleaned()
 
-    #X_train, X_test, y_train, y_test = Feature_Processer().split(data_train, data_test, 1)
+    # X_train, X_test, y_train, y_test = Feature_Processer().split(data_train, data_test, 1)
 
     tf_idf_vectorizer = TfidfVectorizer(ngram_range=(1, 1), min_df=1)
+import pandas as pd
     tf_idf_vectorizer.fit(data_train)
 
     X_train_tf = tf_idf_vectorizer.transform(data_train)
