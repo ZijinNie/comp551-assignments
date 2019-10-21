@@ -8,6 +8,7 @@ class Reader:
     def read(self, path):
         data = pd.read_csv(path, encoding="utf-8")
         return data
+
 class Cleaner:
     def __init__(self, sample_list):
         self.sents_list = sample_list
@@ -36,7 +37,6 @@ class Cleaner:
             sents.append(' '.join(s))
         return sents
 
-
 class drawer:
     def drawing(self, sents_list, tag_list):
         # 20 class, 20 graph
@@ -54,15 +54,14 @@ class drawer:
             seperate_class_list.append(same_class_list)
         return seperate_class_list
 
-
 def plot_generate():
     plt.figure("Frequency and length plot", figsize=(16, 10))
     for i in range(20):
         ax = sbn.distplot(seperate_class_list[i], kde=False, label=unique_tag[i])
     plt.legend()
     ax.set(xlabel='length of comments', ylabel='frequency')
-    plt.show()
-
+    #plt.show()
+    plt.savefig('length.png')
 
 def statistic_generate():
     df = pd.DataFrame.from_records(seperate_class_list, unique_tag)

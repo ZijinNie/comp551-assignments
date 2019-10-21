@@ -259,7 +259,7 @@ def stack():
     svm_pred = clf.svm(0.2)
     multNB1_pred = clf.multNB(alpha=0.2)
     log_pred = clf.logistic(3, 1200)
-    SDG = clf.SGD(alpha=5e-05, penalty='l2')
+    SDG = clf.SGD(alpha=1e-05, penalty='l2')
     kn_pred = clf.KNeighbors(110)
     rf_pred = clf.random_forest()
 

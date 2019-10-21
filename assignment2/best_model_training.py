@@ -3,6 +3,7 @@
 import numpy as np
 import string
 import pandas as pd
+from numpy import hstack
 from sklearn.datasets import make_classification as mk
 # model
 from sklearn.decomposition import LatentDirichletAllocation
@@ -134,7 +135,7 @@ class Cleaner:
 class Feature_Processer:
     def split(self, features_set, target_set, ratio):
         X_train, X_test, y_train, y_test = train_test_split(features_set, target_set, train_size=ratio,
-                                                            test_size=1 - ratio, random_state=1)
+                                                            test_size=1 - ratio)
         return X_train, X_test, y_train, y_test
 
     # n_grams, min_df
@@ -213,6 +214,34 @@ class classifier:
         clf.fit(self.x_train, self.y_train)
         y_pred = clf.predict(self.x_test)
         return y_pred
+class drawer:
+    def drawing(self, sents_list, tag_list):
+        # 20 class, 20 graph
+        unique_tag = ['worldnews', 'canada', 'AskReddit', 'wow', 'conspiracy',
+                      'nba', 'leagueoflegends', 'soccer', 'funny', 'movies',
+                      'anime', 'Overwatch', 'trees', 'GlobalOffensive', 'nfl',
+                      'europe', 'Music', 'baseball', 'hockey', 'gameofthrones']
+        seperate_class_list = []
+        record_index = []
+        for tag in unique_tag:
+            same_class_list = []
+            for i in range(len(tag_list)):
+                if (tag_list[i] == tag):
+                    # cut by the word
+                    same_class_list.append(len(sents_list[i].split(" ")))
+                    record_index.append(i)
+            seperate_class_list.append(same_class_list)
+
+        df = pd.DataFrame.from_records(seperate_class_list, unique_tag)
+        df = df.T
+        statics = df.describe()
+        Z_score = []
+        for j in range(len(tag_list)):
+            mean = statics.loc["min", tag_list[j] ]
+            std = statics.at["std", tag_list[j] ]
+            Z_score.append((len(sents_list[j].split(" "))-mean)/std)
+
+        return seperate_class_list,Z_score
 
 
 def main():
@@ -251,8 +280,12 @@ def stack():
     X_train_tf = tf_idf_vectorizer.transform(X_train)
     X_test_tf = tf_idf_vectorizer.transform(X_test)
 
-    clf = classifier(X_train_tf, X_test_tf, y_train, y_test)
+    seperate_class_list, Z_score= drawer().drawing(data_train, data_test)
+    X_train_dtm = hstack((X_train_tf,np.array(Z_score[:len(X_train)])[:,None]))
+    X_test_dtm = hstack((X_test_tf, np.array(Z_score[:len(X_test)])[:, None]))
 
+    clf = classifier(X_train_tf, X_test_tf, y_train, y_test)
+    #clf = classifier(X_train_dtm,X_test_dtm,y_train,y_test)
     svm_pred = clf.svm(0.2)
     multNB1_pred = clf.multNB(alpha=0.2)
     log_pred = clf.logistic(3, 1200)

@@ -3,9 +3,11 @@ import pandas as pd
 import numpy as np
 import seaborn as sbn
 import matplotlib.pyplot as plt
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.naive_bayes import MultinomialNB
+from sklearn.naive_bayes import MultinomialNB, BernoulliNB
 from sklearn.svm import LinearSVC
 from sklearn import metrics
 from scipy.sparse import hstack
@@ -67,15 +69,6 @@ class classifier:
         self.x_test = x_test
         self.y_test = y_test
 
-    def svm(self, c):
-        # n_estimators = 10
-        model = LinearSVC(C=c, class_weight='balanced')
-        print("start fitting")
-        model.fit(self.x_train, self.y_train)
-        preds = model.predict(self.x_test)
-        scores3 = cross_val_score(model, self.x_train, self.y_train, cv=5, scoring='accuracy')
-        print("Score of svm", scores3.mean() * 100)
-        print("Score of svm", metrics.accuracy_score(self.y_test, preds))
 
     def multNB(self, alpha):
         model = MultinomialNB(alpha=alpha)
@@ -84,6 +77,7 @@ class classifier:
         scores3 = cross_val_score(model, self.x_train, self.y_train, cv=5, scoring='accuracy')
         print("Score of multiple", scores3.mean() * 100)
         print("Score of multiple", metrics.accuracy_score(self.y_test, preds))
+
 
 class drawer:
     def drawing(self, sents_list, tag_list):
@@ -118,7 +112,7 @@ if __name__ == '__main__':
     data_raw = Reader().read("reddit_train.csv")
     data_train = data_raw['comments']
     data_test = data_raw['subreddits']
-    # use_lemmer,use_stemmer, use_stopwords
+
     c = Cleaner(data_train)
     c.lowercase()
     c.remove_punc()
@@ -137,13 +131,10 @@ if __name__ == '__main__':
     print("Experiment1")
     clf.multNB(alpha=0.2)
 
-
     X_train_dtm = hstack((X_train_tf,np.array(Z_score[:len(X_train)])[:,None]))
     X_test_dtm = hstack((X_test_tf, np.array(Z_score[:len(X_test)])[:, None]))
 
 
     clf2 = classifier( X_train_dtm, X_test_dtm, y_train, y_test)
     print("Experiment2")
-    #svm_pred = clf2.svm(0.2)
-    multNB1_pred = clf2.multNB(alpha=0.2)
-
+    clf2.multNB(alpha=0.2)
