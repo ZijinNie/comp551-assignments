@@ -1,4 +1,4 @@
- # comp551-assignments
+ # Machine Learning Projects
 
 ## Logistic Regression & LDA on wine quality prediction and breast-cancer classfication
 ### Contributor: 
